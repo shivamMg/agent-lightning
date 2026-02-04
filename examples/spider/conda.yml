@@ -4,7 +4,6 @@ channels:
   - defaults
 dependencies:
   - python=3.10
-  # libgcc and libstdcxx require: export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
   - libgcc-ng
   - libstdcxx-ng
   - pip
@@ -15,8 +14,6 @@ dependencies:
     - torch==2.8.0  --index-url https://download.pytorch.org/whl/cu128
     - torchvision==0.23.0 --index-url https://download.pytorch.org/whl/cu128
     - vllm==0.10.2
-    # flash-attn installation requires torch. pip install it manually
-    # - flash-attn
     - gdown
     - langgraph<1.0
     - langchain[openai]<1.0
@@ -25,6 +22,12 @@ dependencies:
     - sqlparse
     - nltk
     - agentops==0.4.21
+
+# To use conda installed libgcc and libstdcxx set this env var:
+# export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
+
+# flash-attn installation requires torch. Install it manually after conda env creation with:
+# pip install flash-attn --no-build-isolation
 
 # Download training data in agent-lightning/examples/spider/data
 # gdown --fuzzy https://drive.google.com/file/d/1oi9J1jZP9TyM35L85CL3qeGWl2jqlnL6/view
