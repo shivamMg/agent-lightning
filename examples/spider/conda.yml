@@ -9,7 +9,7 @@ dependencies:
   - libstdcxx-ng
   - pip
   - pip:
-    - agentlightning[verl]
+    - agentlightning[verl]>=0.3.0
     - verl==0.5.0
     - openai==1.99.5
     - torch==2.8.0  --index-url https://download.pytorch.org/whl/cu128
@@ -24,4 +24,9 @@ dependencies:
     - langchain-text-splitters<1.0
     - sqlparse
     - nltk
+    - agentops==0.4.21
 
+# Download training data in agent-lightning/examples/spider/data
+# gdown --fuzzy https://drive.google.com/file/d/1oi9J1jZP9TyM35L85CL3qeGWl2jqlnL6/view
+# unzip -q spider-data.zip -d data
+# rm spider-data.zip
