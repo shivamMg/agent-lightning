@@ -22,6 +22,7 @@ dependencies:
     - sqlparse
     - nltk
     - agentops==0.4.21
+    - transformers>=4.45.0,<5.0.0
 
 # To use conda installed libgcc and libstdcxx set this env var:
 # export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
