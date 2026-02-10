@@ -1,12 +1,16 @@
-# Spider Evaluation Report
+# SQL Agent RL Evaluation Report
 
-## Evaluations
+Evaluation report of Text-to-SQL Agent that was trained with Reinforcement Learning using Agent Lightning and VERL. 
+
+## Report
+
+![](evaluation_barchart.jpeg)
 
 | Model | Customization | Easy (470) | Medium (857) | Hard (463) | Extra (357) | All (2147) |
 |---|---|---|---|---|---|---|
 | Qwen2.5-Coder-1.5B-Instruct | None | 62.6% | 46.4% | 33.9% | 22.4% | **43.3%** |
-| Qwen2.5-Coder-1.5B-Instruct | RL checkpoint step 32 | 76.6% | 62.8% | 51.6% | 37.0% | **59.1%** |
-| Qwen2.5-Coder-1.5B-Instruct | RL checkpoint step 64  | 78.3% | 68.1% | 59.4% | 48.7% | **65.3%** |
+| Qwen2.5-Coder-1.5B-Instruct | RL checkpoint at step 32 | 76.6% | 62.8% | 51.6% | 37.0% | **59.1%** |
+| Qwen2.5-Coder-1.5B-Instruct | RL checkpoint at step 64  | 78.3% | 68.1% | 59.4% | 48.7% | **65.3%** |
 
 ## Key Takeaways
 
@@ -20,12 +24,10 @@ These results measure **SQL execution accuracy** — the fraction of predicted S
 
 ## Difficulty Levels
 
-| Difficulty | Description |
-|---|---|
-| **Easy** | ≤1 component (WHERE/GROUP BY/ORDER BY/JOIN), no aggregations, no subqueries |
-| **Medium** | A few components (e.g., 1–2 clauses) |
-| **Hard** | Multiple components or 1 subquery |
-| **Extra** | Many components and/or multiple subqueries |
-| **All** | Weighted average across all test questions |
-
-
+| Difficulty | Number of Questions | Description |
+|---|---|---|
+| **Easy** | 470 | ≤1 component (WHERE/GROUP BY/ORDER BY/JOIN), no aggregations, no subqueries |
+| **Medium** | 857 | A few components (e.g., 1–2 clauses) |
+| **Hard** | 463 | Multiple components or 1 subquery |
+| **Extra** | 357 | Many components and/or multiple subqueries |
+| **All** | 2,147 | Weighted average across all test questions |
