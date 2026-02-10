@@ -7,11 +7,7 @@ Usage:
     python sql_agent_cli.py invoke --llm http://localhost:8088 --question "show me all unique singer names" --db-id concert_singer
 
     # Generate predictions file for spider_eval
-    python sql_agent_cli.py generate_predictions --llm http://localhost:8088 --input data/test_dev.parquet --output pred.sql
-
-    # Then evaluate with spider_eval:
-    # python -m spider_eval.evaluation --gold data/gold.sql --pred pred.sql \
-    #     --db data/test_database --etype exec
+    python sql_agent_cli.py generate_predictions --llm http://localhost:8088 --input data/test_dev.parquet --output data/pred.sql
 """
 
 from __future__ import annotations
@@ -20,6 +16,7 @@ import argparse
 import os
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Optional
 
 import pandas as pd
@@ -82,6 +79,40 @@ def cmd_invoke(args: argparse.Namespace) -> None:
         print(f"Score (exec match): {score}")
 
 
+def _process_record(
+    row: dict,
+    idx: int,
+    total: int,
+    args: argparse.Namespace,
+    model_name: str,
+) -> tuple[int, str, str]:
+    """Process a single record and return (index, query, db_id)."""
+    db_id = row["db_id"]
+    db_path = resolve_db_path(args.data_dir, db_id)
+
+    if not db_path:
+        print(f"[{idx + 1}/{total}] SKIP - Database not found: {db_id}")
+        return idx, "ERROR DB NOT FOUND", db_id
+
+    try:
+        agent = SQLAgent(
+            db=f"sqlite:///{db_path}",
+            endpoint=f"{args.llm}/v1",
+            verl_replacement={"model": model_name, "temperature": args.temperature},
+            max_turns=args.max_turns,
+        )
+        result = agent.graph().invoke({"question": row["question"]})
+        query = result["query"]
+    except Exception as e:
+        print(f"[{idx + 1}/{total}] ERROR - {db_id}: {e}")
+        query = "ERROR AGENT INVOCATION"
+
+    # Collapse multi-line SQL into a single line so the evaluator
+    # (which reads one prediction per line) parses it correctly.
+    query = " ".join(query.split())
+    return idx, query, db_id
+
+
 def cmd_generate_predictions(args: argparse.Namespace) -> None:
     """Handle the 'generate_predictions' subcommand: produce pred.sql from a parquet dataset."""
     model_name = get_model_name(args.llm, args.model)
@@ -92,37 +123,31 @@ def cmd_generate_predictions(args: argparse.Namespace) -> None:
     records = df.to_dict(orient="records")
     total = len(records)
 
-    print(f"Generating predictions for {total} questions -> {args.output}")
+    print(f"Generating predictions for {total} questions -> {args.output} (concurrency={args.concurrency})")
     start = time.time()
 
-    with open(args.output, "w") as f:
-        for i, row in enumerate(records):
-            db_id = row["db_id"]
-            db_path = resolve_db_path(args.data_dir, db_id)
+    # Pre-allocate results to preserve input order in the output file.
+    results: list[tuple[str, str] | None] = [None] * total
+    completed = 0
 
-            if not db_path:
-                print(f"[{i + 1}/{total}] SKIP - Database not found: {db_id}")
-                f.write(f"SELECT 1\t{db_id}\n")
-                continue
+    with ThreadPoolExecutor(max_workers=args.concurrency) as executor:
+        futures = {
+            executor.submit(_process_record, row, i, total, args, model_name): i
+            for i, row in enumerate(records)
+        }
 
-            try:
-                agent = SQLAgent(
-                    db=f"sqlite:///{db_path}",
-                    endpoint=f"{args.llm}/v1",
-                    verl_replacement={"model": model_name, "temperature": args.temperature},
-                    max_turns=args.max_turns,
-                )
-                result = agent.graph().invoke({"question": row["question"]})
-                query = result["query"]
-            except Exception as e:
-                print(f"[{i + 1}/{total}] ERROR - {db_id}: {e}")
-                query = "SELECT 1"
+        for future in as_completed(futures):
+            idx, query, db_id = future.result()
+            results[idx] = (query, db_id)
+            completed += 1
 
-            f.write(f"{query}\t{db_id}\n")
-
-            if (i + 1) % 50 == 0 or (i + 1) == total:
+            if completed % 50 == 0 or completed == total:
                 elapsed = time.time() - start
-                print(f"[{i + 1}/{total}] {elapsed:.0f}s elapsed")
+                print(f"[{completed}/{total}] {elapsed:.0f}s elapsed")
+
+    with open(args.output, "w") as f:
+        for query, db_id in results:  # type: ignore[misc]
+            f.write(f"{query}\t{db_id}\n")
 
     print(f"Done. Predictions saved to {args.output} ({time.time() - start:.0f}s)")
 
@@ -153,6 +178,7 @@ def main() -> None:
     p_gen.add_argument("--temperature", type=float, default=0.0)
     p_gen.add_argument("--max-turns", type=int, default=5)
     p_gen.add_argument("--limit", type=int, default=None, help="Only process the first N rows")
+    p_gen.add_argument("--concurrency", type=int, default=3, help="Number of concurrent agent invocations (default: 4)")
 
     args = parser.parse_args()
 
