@@ -48,3 +48,40 @@ python sql_agent.py
 ```
 
 This command requires an OpenAI-compatible API service. Configure your service endpoint and credentials using the `OPENAI_API_BASE` and `OPENAI_API_KEY` environment variables.
+
+
+### Serve Checkpoint
+
+```shell
+python fsdp_to_hf.py
+
+CUDA_VISIBLE_DEVICES=2 python -m vllm.entrypoints.openai.api_server --model checkpoints/AgentLightning/spider/global_step_32/hf_model --host 0.0.0.0 --port 8088
+# For base model
+# CUDA_VISIBLE_DEVICES=2 python -m vllm.entrypoints.openai.api_server --model Qwen/Qwen2.5-Coder-1.5B-Instruct --host 0.0.0.0 --port 8088
+
+python sql_agent_cli.py invoke --llm http://localhost:8088 --question "show me all unique singer names" --db-id concert_singer
+
+python sql_agent_cli.py generate_predictions --llm http://localhost:8088 --input data/test.parquet --output data/pred.sql
+
+python -c "import nltk; nltk.download('punkt_tab')"
+
+python -m spider_eval.evaluation --gold data/test_gold.sql --pred pred.sql --db data/test_database --etype exec
+```
+
+### FT model (global_step_32)
+
+```
+                     easy                 medium               hard                 extra                all
+count                470                  857                  463                  357                  2147
+=====================   EXECUTION ACCURACY     =====================
+execution            0.023                0.006                0.004                0.000                0.008
+```
+
+### Base model
+
+```
+                     easy                 medium               hard                 extra                all
+count                470                  857                  463                  357                  2147
+=====================   EXECUTION ACCURACY     =====================
+execution            0.034                0.014                0.013                0.000                0.016
+```
