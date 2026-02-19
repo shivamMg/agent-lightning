@@ -1,0 +1,39 @@
+name: agent-lightning
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - libgcc-ng
+  - libstdcxx-ng
+  - pip
+  - pip:
+    - agentlightning[verl]>=0.3.0
+    - verl==0.5.0
+    - openai==1.99.5
+    - torch==2.8.0  --index-url https://download.pytorch.org/whl/cu128
+    - torchvision==0.23.0 --index-url https://download.pytorch.org/whl/cu128
+    - vllm==0.10.2
+    - gdown
+    - langgraph<1.0
+    - langchain[openai]<1.0
+    - langchain-community
+    - langchain-text-splitters<1.0
+    - sqlparse
+    - nltk
+    - agentops==0.4.21
+    - transformers>=4.45.0,<5.0.0
+
+# To use conda installed libgcc and libstdcxx set this env var:
+# export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
+
+# flash-attn installation requires torch. Install it manually after conda env creation with:
+# pip install flash-attn --no-build-isolation
+
+# Download training data in agent-lightning/examples/spider/data
+# gdown --fuzzy https://drive.google.com/file/d/1oi9J1jZP9TyM35L85CL3qeGWl2jqlnL6/view
+# unzip -q spider-data.zip -d data
+# rm spider-data.zip
+
+# Get WandB API key and set this env var:
+# export WANDB_API_KEY=<api_key>

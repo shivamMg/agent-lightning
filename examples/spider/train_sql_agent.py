@@ -31,6 +31,10 @@ from sql_agent import LitSQLAgent
 
 import agentlightning as agl
 
+PROJECT_NAME = "AgentLightning"
+timestamp = datetime.now().strftime("%m%d%Y_%H%M")
+EXPERIMENT_NAME = f"spider_{timestamp}"
+
 RL_TRAINING_CONFIG: Dict[str, Any] = {
     "algorithm": {
         "adv_estimator": "grpo",
@@ -88,10 +92,11 @@ RL_TRAINING_CONFIG: Dict[str, Any] = {
         "val_before_train": True,
         "critic_warmup": 0,
         "logger": ["console", "wandb"],
-        "project_name": "AgentLightning",
-        "experiment_name": "spider",
+        "project_name": PROJECT_NAME,
+        "experiment_name": EXPERIMENT_NAME,
         "nnodes": 1,
         "test_freq": 32,
+        "save_freq": 32,
         "total_epochs": 2,
     },
 }
@@ -99,13 +104,6 @@ RL_TRAINING_CONFIG: Dict[str, Any] = {
 
 def config_train_fast() -> Dict[str, Any]:
     """A fast training run for CI testing purposes."""
-
-    # `EXPERIMENT_NAME="spider_$(date +%Y%m%d%H%M%S)"`
-    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-    EXPERIMENT_NAME = f"spider_{timestamp}"
-
-    # `PROJECT_NAME=AgentLightningCI`
-    PROJECT_NAME = "AgentLightningCI"
 
     # Simulate writing to $GITHUB_OUTPUT if it’s set
     github_output = os.getenv("GITHUB_OUTPUT")
